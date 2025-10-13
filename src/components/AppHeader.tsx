@@ -11,6 +11,7 @@ import { IUser } from "@/types/user";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearUser } from "@/store/slices/authSlice";
 import { usePathname } from "next/navigation";
+import QuickActionDropdown from "./QuickActionDropdown";
 
 type HeaderProps = {
   title: string;
@@ -75,8 +76,7 @@ export function AppHeader({ title="Header" }: HeaderProps) {
       {/* Left: Page title */}
       <h1 className="text-xl font-semibold text-gray-800 ml-11">{title}</h1>
 
-      {/* Right: Avatar / Initials */}
-      <div className="relative" ref={dropdownRef} onClick={()=> setShowOptions(!showOptions)}>
+      <QuickActionDropdown headerLabel="Profile" options={[{label:"Setting", href:"#"}, {label:"Logout", href:"handleLogout"}]} footerLabel="Logout" onFooterClick={handleLogout}>
         {user?.profile?.avatar ? (
           <Image
             src={user?.profile?.avatar}
@@ -90,29 +90,7 @@ export function AppHeader({ title="Header" }: HeaderProps) {
             {initials}
           </div>
         )}
-      </div>
-
-      <Card className={showOptions ? 'absolute right-5 top-14 block w-36 p-2' : "hidden"}>
-        <ul className="flex flex-col space-y-0.5">
-            <li>
-            <Link
-                href="/profile"
-                className="block w-full px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition"
-            >
-                Profile
-            </Link>
-            </li>
-            <li>
-            <Button
-                onClick={handleLogout}
-                variant="ghost"
-                className="w-full cursor-pointer justify-start px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-100 transition"
-            >
-                Logout
-            </Button>
-            </li>
-        </ul>
-      </Card>
+      </QuickActionDropdown>
     </header>
   );
 }

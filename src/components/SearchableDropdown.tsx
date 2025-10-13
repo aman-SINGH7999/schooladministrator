@@ -34,7 +34,7 @@ export function ComboBox({ label, value, onChange, options, placeholder, classNa
 
   return (
     <div className={cn("", className)}>
-      <label className="block text-sm font-medium mb-1">{label}</label>
+      {label ? <label className="block text-sm font-medium mb-1">{label}</label> : null}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
