@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input"
-import { Ellipsis, Plus, Search } from 'lucide-react'
+import { Ellipsis, FunnelX, Plus, Search } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -161,7 +161,8 @@ useEffect(() => {
               variant="outline"
               className="whitespace-nowrap"
               onClick={() => {setStandard(""); setSection(""); setSearchValue("")}}
-          >
+          > 
+              <FunnelX  />
               Clear Filters
           </Button>
         </div>
@@ -207,6 +208,8 @@ useEffect(() => {
               <TableHead>Class</TableHead>
               <TableHead>Section</TableHead>
               <TableHead>DOB</TableHead>
+              <TableHead>Tests</TableHead>
+              <TableHead>Performance</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -222,6 +225,8 @@ useEffect(() => {
                       <TableCell>{student?.student?.class}</TableCell>
                       <TableCell>{student?.student?.section}</TableCell>
                       <TableCell>{student?.student?.dob ? new Date(student?.student?.dob).toLocaleDateString() : "-"}</TableCell>
+                      <TableCell>{"2"}</TableCell>
+                      <TableCell>{"80%"}</TableCell>
                       <TableCell className="float-right pr-5">
                         <Ellipsis className='cursor-pointer hover:bg-gray-300 rounded-xl' />
                       </TableCell>

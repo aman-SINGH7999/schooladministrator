@@ -6,20 +6,14 @@ import { Card } from "./ui/card";
 import Link from "next/link";
 import { Button } from "./ui/button";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { IUser } from "@/types/user";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearUser } from "@/store/slices/authSlice";
-import { usePathname } from "next/navigation";
 import QuickActionDropdown from "./QuickActionDropdown";
 
-type HeaderProps = {
-  title: string;
-  name?: string;       // user full name
-  avatarUrl?: string;  // optional avatar
-};
 
-export function AppHeader({ title="Header" }: HeaderProps) {
+export function AppHeader() {
     const [showOptions, setShowOptions] = useState(false);
     const user = useAppSelector((state) => state.auth.user); 
     const router = useRouter();
@@ -27,13 +21,6 @@ export function AppHeader({ title="Header" }: HeaderProps) {
     const dropdownRef = useRef<HTMLDivElement | null>(null);
     const pathname = usePathname();
   
-    //   // Load user from localStorage on client-side only
-    // useEffect(() => {
-    //     const storedUser = localStorage.getItem("user");
-    //     if (storedUser) {
-    //     setUser(JSON.parse(storedUser));
-    //     }
-    // }, []);
     
     // Generate initials
     console.log("parsed user: ", user);
@@ -74,7 +61,7 @@ export function AppHeader({ title="Header" }: HeaderProps) {
   return (
     <header className="w-full bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm mt-0">
       {/* Left: Page title */}
-      <h1 className="text-xl font-semibold text-gray-800 ml-11">{title}</h1>
+      <h1 className="text-xl font-semibold text-gray-800 ml-11">{pathname}</h1>
 
       <QuickActionDropdown headerLabel="Profile" options={[{label:"Setting", href:"#"}, {label:"Logout", href:"handleLogout"}]} footerLabel="Logout" onFooterClick={handleLogout}>
         {user?.profile?.avatar ? (
