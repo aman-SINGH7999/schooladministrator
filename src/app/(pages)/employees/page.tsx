@@ -22,10 +22,12 @@ import { Modal } from "@/components/Modal";
 import axios from "axios";
 import { ComboBox } from '@/components/SearchableDropdown';
 import { TableSkeleton } from '@/components/Skeletons';
-import { SchoolEmployeeData } from '@/data';
 import { IUser } from '@/types/user';
 import SelectFilter from '@/components/SelectFilter';
 import CheckBoxButtons from '@/components/CheckBoxButtons';
+import { useAppSelector } from '@/store/hooks';
+import { IAxiosErrorResponse, isAxiosError } from "@/types/axios";
+
 
 export default function Page() {
   const [page, setPage] = useState(1);
@@ -39,6 +41,9 @@ export default function Page() {
   const [employees, setEmployees] = useState<IUser[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<IUser[]>([]);
   const [filters, setFilters] = useState<string[]>([]);
+  
+  const user = useAppSelector((state) => state.auth.user);
+
 
   const [form, setForm] = useState({
     name: "",
@@ -48,6 +53,7 @@ export default function Page() {
     role: "",
     subjects: [] as string[],
     department: "",
+    moreInfo: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,9 +68,11 @@ export default function Page() {
         limit: "10",
       });
       if (searchValue) params.append("searchValue", searchValue); 
-
-      const res = await axios.get(`/api/schools?${params.toString()}`, { withCredentials: true });
+      const server_url = process.env.NEXT_PUBLIC_SERVER_URL;
+      const res = await axios.get(`${server_url}/api/schools/${user?.schoolId}/employees?${params.toString()}`, { withCredentials: true });
       setTotalPages(res.data.pagination.totalPages);
+      setEmployees(res.data.employees);
+      console.log("Response data: ", res.data)
     } catch (err) {
       console.log("Error in fetching data: ", err);
     } finally {
@@ -73,10 +81,12 @@ export default function Page() {
   };
 
   useEffect(() => {
-    fetchSchools();
-    setEmployees(SchoolEmployeeData);
-    setFilteredEmployees(SchoolEmployeeData);
-  }, [page]);
+    if (user?.schoolId) {
+      fetchSchools();
+    }
+
+    // eslint-disable-next-line
+  }, [page, user]);
 
   // 🧠 Main filtering logic
   const handleFilter = () => {
@@ -116,6 +126,7 @@ export default function Page() {
   useEffect(() => {
     const timeout = setTimeout(() => handleFilter(), 600);
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line
   }, [filters, searchValue, employees]);
 
 
@@ -126,10 +137,11 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const res = await axios.post("/api/schools", form, { withCredentials: true });
-
+      const server_url = process.env.NEXT_PUBLIC_SERVER_URL;
+      const res = await axios.post(`${server_url}/api/schools/${user?.schoolId}/employees`, form, { withCredentials: true });
+      console.log("register employee: ", res);
       if (res.data.success) {
-        setSuccess("School registered successfully!");
+        setSuccess(res.data.message || "Employee registered successfully.");
         setOpen(false);
         setForm({
         name: "",
@@ -139,12 +151,17 @@ export default function Page() {
         role: "",
         subjects: [],
         department: "",
+        moreInfo: "",
       });
       }
     } catch (err: unknown) {
-      let message = "Error in register school";
-      if (err instanceof Error) message = err.message;
-      setError(message || "Error in register school");
+      let message = "Error in registering employee";
+      if (isAxiosError<IAxiosErrorResponse>(err) && err.response?.data?.error) {
+        message = err.response.data.error;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -227,7 +244,7 @@ export default function Page() {
                 </TableRow>
               ) : (
                 filteredEmployees.map((employee) => (
-                  <TableRow key={employee._id || employee.name}>
+                  <TableRow key={employee._id?.toString()}>
                     <TableCell>
                       <Checkbox className="cursor-pointer" />
                     </TableCell>
@@ -349,10 +366,10 @@ export default function Page() {
 
           {/* More info */}
           <div className="md:col-span-2">
-            <Label className="mb-1" htmlFor="address">
+            <Label className="mb-1" htmlFor="moreInfo">
               More Info
             </Label>
-            <Input id="address" name="address" value={form.address} onChange={handleChange} />
+            <Input id="moreInfo" name="moreInfo" value={form.moreInfo} onChange={handleChange} />
           </div>
 
           {/* Error / Success */}

@@ -28,7 +28,8 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const res = await axios.post("/api/auth/forgot-password", {email});
+      const server_url = process.env.NEXT_PUBLIC_SERVER_URL 
+      const res = await axios.post(`${server_url}/api/auth/forgot-password`, {email});
 
       if (res.data.success){
         setSuccess("OTP aapke email par bheja gaya hai.");
@@ -48,7 +49,8 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      const res = await axios.put("/api/auth/forgot-password", { email, otp, password });
+      const server_url = process.env.NEXT_PUBLIC_SERVER_URL 
+      const res = await axios.put(`${server_url}/api/auth/forgot-password`, { email, otp, password });
 
 
       setSuccess("Password reset successful");
