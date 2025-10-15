@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input"
 import { Ellipsis, Plus, X } from 'lucide-react'
+import { toast } from "sonner"
 import {
   Table,
   TableBody,
@@ -35,7 +36,6 @@ export default function Page() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [searchValue, setSearchValue] = useState<string>("");
   const [employees, setEmployees] = useState<IUser[]>([]);
@@ -72,6 +72,7 @@ export default function Page() {
       const res = await axios.get(`${server_url}/api/schools/${user?.schoolId}/employees?${params.toString()}`, { withCredentials: true });
       setTotalPages(res.data.pagination.totalPages);
       setEmployees(res.data.employees);
+      setFilteredEmployees(res.data.employees);
       console.log("Response data: ", res.data)
     } catch (err) {
       console.log("Error in fetching data: ", err);
@@ -133,7 +134,6 @@ export default function Page() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     setLoading(true);
 
     try {
@@ -141,7 +141,8 @@ export default function Page() {
       const res = await axios.post(`${server_url}/api/schools/${user?.schoolId}/employees`, form, { withCredentials: true });
       console.log("register employee: ", res);
       if (res.data.success) {
-        setSuccess(res.data.message || "Employee registered successfully.");
+        toast.success("Event has been created")
+        await fetchSchools();
         setOpen(false);
         setForm({
         name: "",
@@ -374,8 +375,7 @@ export default function Page() {
 
           {/* Error / Success */}
           <div className="md:col-span-2">
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            {success && <p className="text-green-600 text-sm">{success}</p>}
+            {error && <p className="text-red-500 text-sm">*{error}</p>}
           </div>
 
           {/* Submit */}

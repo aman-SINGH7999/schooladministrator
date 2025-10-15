@@ -9,8 +9,9 @@ import axios from "axios";
 import { useRouter, usePathname } from "next/navigation";
 import { IUser } from "@/types/user";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { clearUser } from "@/store/slices/authSlice";
+import { clearSchool, clearUser } from "@/store/slices/authSlice";
 import QuickActionDropdown from "./QuickActionDropdown";
+import { toast } from "sonner";
 
 
 export function AppHeader() {
@@ -51,7 +52,10 @@ export function AppHeader() {
         try{
             const res = await axios.post('/api/auth/logout', {}, { withCredentials: true });
             localStorage.removeItem("user");
+            localStorage.removeItem("school");
             dispatch(clearUser());
+            dispatch(clearSchool());
+            toast.success("Logout Successful.")
             router.push("/login");
         }catch(err){
             console.log(err)

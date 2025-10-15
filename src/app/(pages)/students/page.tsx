@@ -22,10 +22,12 @@ import { Pagination } from "@/components/Pagination";
 import { Modal } from "@/components/Modal";
 import axios from "axios";
 import { ComboBox } from '@/components/SearchableDropdown';
-import { ISchool } from '@/types/school';
 import { TableSkeleton } from '@/components/Skeletons';
 import { IUser } from '@/types/user';
-import { studentsData } from '@/data';
+import { useAppSelector } from '@/store/hooks';
+import { toast } from 'sonner';
+import { IAxiosErrorResponse, isAxiosError } from '@/types/axios';
+import SelectFilter from '@/components/SelectFilter';
 
 
 
@@ -35,33 +37,30 @@ export default function Page() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [section, setSection] = useState<string>("");
   const [standard, setStandard] = useState<string>("");
   const [searchValue, setSearchValue] = useState<string>("");
-  const [schools, setSchools] = useState<ISchool[]>([]);
   const [students, setStudents] = useState<IUser[]>([]);
-  // const [students, setStudents] = useState([]);
-
-
-
-
   const [form, setForm] = useState({
     name: "",
-    owner: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
+    rollNo: "",
+    standard: "",
+    section: "",
+    dob: "",
+    gender: "",
+    moreInfo: "",
   });
+  const [rollSuffix, setRollSuffix] = useState(""); // Only user input suffix
+  
+  
+  const school = useAppSelector((state)=> state.auth.school);
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-const fetchSchools = async () => {
+const fetchStudents = async () => {
   setLoading(true);
   try {
     const params = new URLSearchParams({
@@ -70,10 +69,12 @@ const fetchSchools = async () => {
     });
     if (searchValue) params.append("searchValue", searchValue);
     if (section) params.append("section", section);
-    if (standard) params.append("class", standard);
+    if (standard) params.append("standard", standard);
 
-    const res = await axios.get(`/api/schools?${params.toString()}`, { withCredentials: true });
-    setSchools(res.data.data);
+    const server_url = process.env.NEXT_PUBLIC_SERVER_URL;
+    const res = await axios.get(`${server_url}/api/schools/${school?._id}/students?${params.toString()}`, { withCredentials: true });
+    setStudents(res.data.students);
+    console.log("Data: ",res.data)
     setTotalPages(res.data.pagination.totalPages);
   } catch (err) {
     console.log("Error in fetching data: ", err);
@@ -82,44 +83,52 @@ const fetchSchools = async () => {
   }
 }
 useEffect(() => {
-  fetchSchools();
-  setStudents(studentsData);
-}, [page, standard, section]);
+  console.log("School: ", school);
+  if(school?._id){
+    fetchStudents();
+  }
+}, [page, standard, section, school]);
 
 
 
   const handleFilter = async ()=>{
     setPage(1);
-    fetchSchools();
+    fetchStudents();
   }
 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(null);
     setLoading(true);
 
     try {
-      const res = await axios.post("/api/schools", form);
+      const server_url = process.env.NEXT_PUBLIC_SERVER_URL;
+      const res = await axios.post(`${server_url}/api/schools/${school?._id}/students`, form, { withCredentials:true });
 
       if (res.data.success) {
-        setSuccess("School registered successfully!");
+        toast.success("Student registered successfully");
+        await fetchStudents();
         setOpen(false);
+
         setForm({
           name: "",
-          owner: "",
-          email: "",
-          phone: "",
-          address: "",
-          city: "",
-          state: "",
+          rollNo: "",
+          standard: "",
+          section: "",
+          dob: "",
+          gender: "",
+          moreInfo: "",
         });
       }
     } catch (err: unknown) {
-      let message = "Error in register school";
-      if (err instanceof Error) message = err.message;
-      setError(message || "Error in register school");
+      let message = "Error in register Student";
+            if (isAxiosError<IAxiosErrorResponse>(err) && err.response?.data?.error) {
+              message = err.response.data.error;
+            } else if (err instanceof Error) {
+              message = err.message;
+            }
+            setError(message);
     } finally {
       setLoading(false);
     }
@@ -199,7 +208,7 @@ useEffect(() => {
        {/* Table data */}
        <Card className='p-2 mt-5'>
         <Table>
-          <TableCaption>{loading ? "Loading..." : "A list of your recent invoices."} </TableCaption>
+          <TableCaption>{loading ? "Loading..." : "A list of registered students"} </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px]">Invoice</TableHead>
@@ -222,7 +231,7 @@ useEffect(() => {
                       <TableCell><Checkbox className='cursor-pointer' /></TableCell>
                       <TableCell><Link href={`/schools/${student._id}`} className='text-sky-800 font-medium'>{student?.name}</Link></TableCell>
                       <TableCell>{student.rollNo}</TableCell>
-                      <TableCell>{student?.student?.class}</TableCell>
+                      <TableCell>{student?.student?.standard}</TableCell>
                       <TableCell>{student?.student?.section}</TableCell>
                       <TableCell>{student?.student?.dob ? new Date(student?.student?.dob).toLocaleDateString() : "-"}</TableCell>
                       <TableCell>{"2"}</TableCell>
@@ -254,16 +263,16 @@ useEffect(() => {
             {/* Student Name */}
             <div className="md:col-span-2">
               <Label htmlFor="name" className='mb-1'>Student Name</Label>
-              <Input id="name" name="name" value={form.name} onChange={handleChange} required />
+              <Input id="name" type='text' name="name" value={form.name} onChange={handleChange} required />
             </div>
 
             {/* Standard */}
             <div className="md:col-span-1">
               <ComboBox
                 label=""
-                value={standard}
-                onChange={(val) => setStandard(val)}
-                options={["LKG","UKG", "1st Standard", "2nd Standard", "3rd Standard", "4th Standard", "5th Standard", "6th Standard", "7th Standard", "8th Standard", "9th Standard", "10th Standard", "11th Standard", "12th Standard"]}
+                value={form.standard}
+                onChange={(val)=> setForm({ ...form, standard: val })}
+                options={["LKG","UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"]}
                 placeholder="Select Standard"
               />
             </div>
@@ -272,49 +281,53 @@ useEffect(() => {
             <div >
               <ComboBox
                 label=""
-                value={section}
-                onChange={(val) => setSection(val)}
+                value={form.section}
+                onChange={(val)=> setForm({ ...form, section: val })}
                 options={["A", "B", "C", "D", "E"]}
-                placeholder={standard ? "Select Section" : "Select Class first"}
-                disabled={!standard}
+                placeholder={form?.standard ? "Select Section" : "Select Class first"}
+                disabled={!form?.standard}
               />
             </div>
 
             {/* Roll No */}
-            <div >
-              <Label className='mb-1' htmlFor="phone">Roll No.</Label>
-              <Input type="tel" id="phone" name="phone" value={form.phone} onChange={handleChange} required />
+            <div>
+              <Label className='mb-1' htmlFor="rollNo">Roll No.</Label>
+              <Input
+                type="text"
+                id="rollNo"
+                name="rollNo"
+                value={rollSuffix ? `${school?.schoolCode}-${rollSuffix}` : `${school?.schoolCode}-`}
+                onChange={(e) => {
+                  // Remove prefix if user tries to type it
+                  const val = e.target.value.replace(`${school?.schoolCode}-`, "");
+                  setRollSuffix(val);
+                  setForm({ ...form, rollNo: `${school?.schoolCode}-${val}` });
+                }}
+                required
+                placeholder="Enter Roll No e.g. 01"
+              />
             </div>
+
 
             {/* Date of Birth */}
             <div >
-              <Label className='mb-1' htmlFor="phone">DOB</Label>
-              <Input type="tel" id="phone" name="phone" value={form.phone} onChange={handleChange} required />
+              <Label className='mb-1' htmlFor="dob">DOB</Label>
+              <Input type="date" id="dob" name="dob" value={form.dob} onChange={handleChange} required />
             </div>
 
-            {/* Phone */}
-            <div >
-              <Label className='mb-1' htmlFor="phone">Phone</Label>
-              <Input type="tel" id="phone" name="phone" value={form.phone} onChange={handleChange} />
-            </div>
-
-
-            {/* Address */} 
-            {/* <div className="md:col-span-2">
-              <Label className='mb-1' htmlFor="address">Address</Label> 
-              <Input id="address" name="address" value={form.address} onChange={handleChange} /> 
-            </div> */}
+            {/* Gender */}
+            <SelectFilter label="Select Gender" values={["Male", "Female", "Other"]} onChange={(val) => setForm({ ...form, gender: val })}  />
+           
 
             {/* Error / Success */}
             <div className="md:col-span-2">
               {error && <p className="text-red-500 text-sm">{error}</p>}
-              {success && <p className="text-green-600 text-sm">{success}</p>}
             </div>
 
             {/* Submit */}
             <div className="md:col-span-2 flex justify-end">
               <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white">
-                {loading ? "Registering..." : "Register School"}
+                {loading ? "Registering..." : "Register Student"}
               </Button>
             </div>
           </form>

@@ -10,7 +10,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useAppDispatch } from "@/store/hooks";
-import { setUser } from "@/store/slices/authSlice";
+import { setSchool, setUser } from "@/store/slices/authSlice";
 
 
 export default function AdminLogin() {
@@ -60,8 +60,10 @@ export default function AdminLogin() {
       if (res.data.success) {
         // save token in localStorage (or cookies)
         localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("school", JSON.stringify(res.data.school));
         dispatch(setUser(res.data.user));
-        console.log("User:", res.data.user);
+        dispatch(setSchool(res.data.school));
+        console.log("User:", res.data);
         router.push('/dashboard')
       }
 

@@ -9,7 +9,7 @@ export type UserRole =
   | "staff";
 
 export interface IUser {
-  _id?: Types.ObjectId | string;
+  _id?: Types.ObjectId;
   schoolId?: Types.ObjectId;
   name: string;
   email?: string;
@@ -25,11 +25,12 @@ export interface IUser {
     avatar?: string;
     phone?: string;
     gender?: "male" | "female" | "other";
+    moreInfo?: string;
   };
 
   // Student fields
   student?: {
-    class?: string;
+    standard?: string;
     section?: string;
     admissionNo?: string;
     dob: Date;
@@ -37,13 +38,11 @@ export interface IUser {
 
   // Teacher fields
   teacher?: {
-    moreInfo?: string;
     subjectSpecialization?: string[];
   };
 
   // Staff fields
   staff?: {
-    moreInfo?: string;
     department?: string;
   };
 }
