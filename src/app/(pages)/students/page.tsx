@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input"
-import { Ellipsis, FunnelX, Plus, Search } from 'lucide-react'
+import { Ellipsis, FunnelX, Plus, Search, Upload } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -28,6 +28,7 @@ import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 import { IAxiosErrorResponse, isAxiosError } from '@/types/axios';
 import SelectFilter from '@/components/SelectFilter';
+import BulkUploadModal from '@/components/school/BulkUploadModal';
 
 
 
@@ -50,7 +51,8 @@ export default function Page() {
     gender: "",
     moreInfo: "",
   });
-  const [rollSuffix, setRollSuffix] = useState(""); // Only user input suffix
+  const [rollSuffix, setRollSuffix] = useState("");
+  const [bulkOpen, setBulkOpen] = useState(false);
   
   
   const school = useAppSelector((state)=> state.auth.school);
@@ -147,7 +149,7 @@ useEffect(() => {
               label=""
               value={standard}
               onChange={(val) => setStandard(val)}
-              options={["LKG","UKG", "1st Standard", "2nd Standard", "3rd Standard", "4th Standard", "5th Standard", "6th Standard", "7th Standard", "8th Standard", "9th Standard", "10th Standard", "11th Standard", "12th Standard"]}
+              options={["LKG","UKG", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]}
               placeholder="Select Standard"
             />
           </div>
@@ -192,15 +194,23 @@ useEffect(() => {
         </div>
 
         {/* Register School */}
-        <div className="w-full md:w-auto">
+        <div className="flex flex-col md:flex-row w-full md:w-auto">
           <Button
             onClick={() => setOpen(true)}
             variant="outline"
             className="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white"
           >
-            <Plus className="mr-2 h-4 w-4" />
-            Register Students
+            <Plus className="h-4 w-4" />
+            Register
           </Button>
+          <Button
+              onClick={() => setBulkOpen(true)}
+              variant="outline"
+              className="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              <Upload className="h-4 w-4" />
+               Upload
+            </Button>
         </div>
       </Card>
 
@@ -217,6 +227,7 @@ useEffect(() => {
               <TableHead>Class</TableHead>
               <TableHead>Section</TableHead>
               <TableHead>DOB</TableHead>
+              <TableHead>Gender</TableHead>
               <TableHead>Tests</TableHead>
               <TableHead>Performance</TableHead>
               <TableHead className="text-right">Action</TableHead>
@@ -234,6 +245,7 @@ useEffect(() => {
                       <TableCell>{student?.student?.standard}</TableCell>
                       <TableCell>{student?.student?.section}</TableCell>
                       <TableCell>{student?.student?.dob ? new Date(student?.student?.dob).toLocaleDateString() : "-"}</TableCell>
+                      <TableCell>{student?.profile?.gender}</TableCell>
                       <TableCell>{"2"}</TableCell>
                       <TableCell>{"80%"}</TableCell>
                       <TableCell className="float-right pr-5">
@@ -272,7 +284,7 @@ useEffect(() => {
                 label=""
                 value={form.standard}
                 onChange={(val)=> setForm({ ...form, standard: val })}
-                options={["LKG","UKG", "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"]}
+                options={["LKG","UKG", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]}
                 placeholder="Select Standard"
               />
             </div>
@@ -296,23 +308,38 @@ useEffect(() => {
                 type="text"
                 id="rollNo"
                 name="rollNo"
-                value={rollSuffix ? `${school?.schoolCode}-${rollSuffix}` : `${school?.schoolCode}-`}
+                value={
+                  school?.schoolCode && form.standard && form.section
+                    ? `${school.schoolCode}-${form.standard}${form.section}-${rollSuffix}`
+                    : rollSuffix
+                }
                 onChange={(e) => {
-                  // Remove prefix if user tries to type it
-                  const val = e.target.value.replace(`${school?.schoolCode}-`, "");
+                  // Extract only the user input roll number (after last '-')
+                  const val = e.target.value.split("-").pop()?.replace(/\s+/g, '') || "";
                   setRollSuffix(val);
-                  setForm({ ...form, rollNo: `${school?.schoolCode}-${val}` });
+                }}
+                onBlur={() => {
+                  if (!rollSuffix.trim()) {
+                    toast.error("Roll number cannot be empty!");
+                  } else {
+                    setForm({
+                      ...form,
+                      rollNo: `${school?.schoolCode}-${form.standard}${form.section}-${rollSuffix}`,
+                    });
+                  }
                 }}
                 required
                 placeholder="Enter Roll No e.g. 01"
+                disabled={!form.standard || !form.section}
               />
             </div>
+
 
 
             {/* Date of Birth */}
             <div >
               <Label className='mb-1' htmlFor="dob">DOB</Label>
-              <Input type="date" id="dob" name="dob" value={form.dob} onChange={handleChange} required />
+              <Input type="date" id="dob" name="dob" value={form.dob} onChange={handleChange} required max={new Date().toISOString().split("T")[0]}/>
             </div>
 
             {/* Gender */}
@@ -324,6 +351,7 @@ useEffect(() => {
               {error && <p className="text-red-500 text-sm">{error}</p>}
             </div>
 
+
             {/* Submit */}
             <div className="md:col-span-2 flex justify-end">
               <Button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-700 text-white">
@@ -332,6 +360,13 @@ useEffect(() => {
             </div>
           </form>
       </Modal>
+      <BulkUploadModal
+        isOpen={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        schoolId={school?._id?.toString()}
+        schoolCode={school?.schoolCode}
+        onSuccess={() => { fetchStudents(); setBulkOpen(false); }}
+      />
     </>
   )
 }
